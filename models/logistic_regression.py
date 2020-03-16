@@ -1,4 +1,6 @@
 import numpy as np
+from .data_utils import get_minibatches
+from sklearn.metrics import accuracy_score
 
 class LogisticRegression:
     def __init__(self, input_dim, num_classes):
@@ -12,26 +14,35 @@ class LogisticRegression:
         return np.exp(z) / np.sum(np.exp(z), axis=0)
 
 
-    def train(self, X, Y, num_epochs=100, alpha=0.05, print_delta=100):
-        m = X.shape[0]
+    def train(self, X_train, Y_train, X_dev, Y_dev, num_epochs=100, alpha=0.05, minibatch_size=32, print_interval=100):
+        minibatches = get_minibatches(X_train, Y_train, minibatch_size)
         for i in range(num_epochs):
-            # forward propagation
-            Z = np.matmul(self.W, X) + self.b
-            probs = self.softmax(Z)
+            loss = -1
+            for minibatch_X, minibatch_Y in minibatches:
+                m = minibatch_X.shape[1]
 
-            # compute loss
-            L = -(1. / m) * np.sum(np.multiply(Y, np.log(probs)))
-            if i % print_delta == 0:
-                print("Loss at epoch {}: {}".format(i, L))
+                # forward propagation
+                Z = np.matmul(self.W, minibatch_X) + self.b
+                probs = self.softmax(Z)
 
-            # backpropagation (compute gradients)
-            dZ = probs - Y
-            dW = (1. / m) * np.matmul(dZ, X.T)
-            db = (1. / m) * np.sum(dZ, axis=1, keepdims=True)
+                # compute loss
+                loss = -(1. / m) * np.sum(np.multiply(minibatch_Y, np.log(probs)))
 
-            # update weights
-            self.W = self.W - alpha * dW
-            self.b = self.b - alpha * db
+                # backpropagation (compute gradients)
+                dZ = probs - minibatch_Y
+                dW = (1. / m) * np.matmul(dZ, minibatch_X.T)
+                db = (1. / m) * np.sum(dZ, axis=1, keepdims=True)
+
+                # update weights
+                self.W = self.W - alpha * dW
+                self.b = self.b - alpha * db
+
+            if i % print_interval == 0:
+                y_pred = self.predict(X_dev)
+                y_actual = np.argmax(Y_dev, axis=0)
+                accuracy = accuracy_score(y_actual, y_pred)
+
+                print("Loss at epoch {}: {}; Accuracy: {}".format(i, loss, accuracy))
 
 
     def predict(self, X):
@@ -39,8 +50,5 @@ class LogisticRegression:
         probs = self.softmax(Z)
         preds = np.argmax(probs, axis=0)
         return preds
-
-
-
 
 
