@@ -14,11 +14,12 @@ class LogisticRegression:
         return np.exp(z) / np.sum(np.exp(z), axis=0)
 
 
-    def train(self, X_train, Y_train, X_dev, Y_dev, num_epochs=100, alpha=0.05, minibatch_size=32, print_interval=100):
+    def train(self, X_train, Y_train, X_val, Y_val, num_epochs=100, alpha=0.05, minibatch_size=32, print_interval=100):
         minibatches = get_minibatches(X_train, Y_train, minibatch_size)
         for i in range(num_epochs):
             loss = -1
             for minibatch_X, minibatch_Y in minibatches:
+                # number of training examples in the minibatch
                 m = minibatch_X.shape[1]
 
                 # forward propagation
@@ -38,11 +39,11 @@ class LogisticRegression:
                 self.b = self.b - alpha * db
 
             if i % print_interval == 0:
-                y_pred = self.predict(X_dev)
-                y_actual = np.argmax(Y_dev, axis=0)
+                y_pred = self.predict(X_val)
+                y_actual = np.argmax(Y_val, axis=0)
                 accuracy = accuracy_score(y_actual, y_pred)
 
-                print("Loss at epoch {}: {}; Accuracy: {}".format(i, loss, accuracy))
+                print("Loss at epoch {}: {} - validation accuracy: {}".format(i, loss, accuracy))
 
 
     def predict(self, X):
